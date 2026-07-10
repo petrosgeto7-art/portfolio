@@ -68,7 +68,7 @@ export default function Admin() {
       <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-white/10 bg-black/50 backdrop-blur-xl p-6 flex flex-col relative z-10">
         <div className="text-2xl font-display font-bold mb-12 tracking-tighter text-white flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg overflow-hidden bg-black flex items-center justify-center border border-white/[0.05]">
-            <img src="/pg_logo.png" alt="PG" className="w-full h-full object-cover" style={{ filter: 'hue-rotate(135deg) saturate(1.5)' }} />
+            <img src="/pg_logo.png" alt="PG" className="w-full h-full object-cover" />
           </div>
           <span>{content.brand?.firstName || 'PETROS'} <span className="text-white">{content.brand?.lastName || 'GETO'}</span></span>
         </div>
