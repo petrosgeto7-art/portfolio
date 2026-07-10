@@ -48,7 +48,7 @@ export default function Navigation() {
         <div className="flex-1 flex justify-start">
           <a href="#home" className="flex items-center gap-3 group">
             <div className="w-9 h-9 rounded-xl overflow-hidden relative bg-black">
-              <img src="/pg_logo.png" alt="PG" className="w-full h-full object-cover" />
+              <img src="/pg_logo.png" alt="PG" className="w-full h-full object-cover" style={{ filter: 'hue-rotate(135deg) saturate(1.5)' }} />
             </div>
             <span className="text-base font-display font-bold tracking-tight text-white hidden sm:block">
               {content.brand?.firstName || 'PETROS'}<span className="text-amber-400">.</span>

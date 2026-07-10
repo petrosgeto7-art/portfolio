@@ -22,7 +22,7 @@ export default function Footer() {
           {/* Logo & Copyright */}
           <div className="flex items-center gap-4">
             <div className="w-8 h-8 rounded-lg overflow-hidden bg-black flex items-center justify-center border border-white/[0.05]">
-              <img src="/pg_logo.png" alt="PG" className="w-full h-full object-cover" />
+              <img src="/pg_logo.png" alt="PG" className="w-full h-full object-cover" style={{ filter: 'hue-rotate(135deg) saturate(1.5)' }} />
             </div>
             <p className="text-sm font-medium text-slate-400">
               © {new Date().getFullYear()} {content.brand?.firstName || 'Petros'} {content.brand?.lastName || 'Geto'}. All rights reserved.
