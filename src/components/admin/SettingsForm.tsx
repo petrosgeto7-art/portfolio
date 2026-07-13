@@ -3,7 +3,7 @@ import { apiFetch } from '../../lib/api';
 import { useContent, PortfolioContent, CertificateContent, SkillGroup, SkillItem } from '../../contexts/ContentContext';
 import { Button } from '../ui/Button';
 import { Save, Plus, Trash2, Link, Upload, Loader2 } from 'lucide-react';
-import imageCompression from 'browser-image-compression';
+import { uploadImageToStorage } from '../../lib/uploadImage';
 
 export default function SettingsForm() {
   const { content } = useContent();
@@ -119,14 +119,11 @@ export default function SettingsForm() {
     
     setUploadingProfile(true);
     try {
-      const options = { maxSizeMB: 0.1, maxWidthOrHeight: 800, useWebWorker: true };
-      const compressedFile = await imageCompression(file, options);
-      const base64Url = await imageCompression.getDataUrlFromFile(compressedFile);
-      
-      handleChange('hero', 'profileImage', base64Url);
+      const downloadURL = await uploadImageToStorage(file, 'profile');
+      handleChange('hero', 'profileImage', downloadURL);
     } catch (err) {
       console.error(err);
-      alert('Failed to process image.');
+      alert('Failed to upload image.');
     } finally {
       setUploadingProfile(false);
     }
@@ -139,14 +136,11 @@ export default function SettingsForm() {
     
     setUploadingAbout(true);
     try {
-      const options = { maxSizeMB: 0.1, maxWidthOrHeight: 800, useWebWorker: true };
-      const compressedFile = await imageCompression(file, options);
-      const base64Url = await imageCompression.getDataUrlFromFile(compressedFile);
-      
-      handleChange('about', 'aboutImage', base64Url);
+      const downloadURL = await uploadImageToStorage(file, 'about');
+      handleChange('about', 'aboutImage', downloadURL);
     } catch (err) {
       console.error(err);
-      alert('Failed to process image.');
+      alert('Failed to upload image.');
     } finally {
       setUploadingAbout(false);
     }
@@ -159,14 +153,11 @@ export default function SettingsForm() {
     
     setUploadingCert(index);
     try {
-      const options = { maxSizeMB: 0.1, maxWidthOrHeight: 800, useWebWorker: true };
-      const compressedFile = await imageCompression(file, options);
-      const base64Url = await imageCompression.getDataUrlFromFile(compressedFile);
-      
-      handleCertificateChange(index, 'image', base64Url);
+      const downloadURL = await uploadImageToStorage(file, 'certificates');
+      handleCertificateChange(index, 'image', downloadURL);
     } catch (err) {
       console.error(err);
-      alert('Failed to process certificate image.');
+      alert('Failed to upload certificate image.');
     } finally {
       setUploadingCert(null);
     }
