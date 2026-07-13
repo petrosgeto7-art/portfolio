@@ -63,6 +63,15 @@ export default function Contact() {
       hoverBorder: 'group-hover:border-emerald-500/30',
     },
     {
+      icon: Send,
+      label: 'Telegram',
+      value: content.contact.telegramText,
+      href: content.contact.telegramUrl,
+      color: 'text-sky-400',
+      hoverBg: 'group-hover:bg-sky-500/15',
+      hoverBorder: 'group-hover:border-sky-500/30',
+    },
+    {
       icon: Github,
       label: 'GitHub',
       value: content.contact.githubText,

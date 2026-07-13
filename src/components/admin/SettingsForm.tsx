@@ -396,6 +396,24 @@ export default function SettingsForm() {
               />
             </div>
             <div className="space-y-2">
+              <label className="text-sm text-gray-400">Telegram Link</label>
+              <input 
+                type="text" 
+                value={formData.contact.telegramUrl} 
+                onChange={(e) => handleChange('contact', 'telegramUrl', e.target.value)}
+                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400">Telegram Display Text</label>
+              <input 
+                type="text" 
+                value={formData.contact.telegramText} 
+                onChange={(e) => handleChange('contact', 'telegramText', e.target.value)}
+                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
+              />
+            </div>
+            <div className="space-y-2">
               <label className="text-sm text-gray-400">Location</label>
               <input 
                 type="text" 

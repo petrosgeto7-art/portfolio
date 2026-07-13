@@ -44,6 +44,8 @@ export interface PortfolioContent {
     email: string;
     phone: string;
     whatsapp: string;
+    telegramUrl: string;
+    telegramText: string;
     githubUrl: string;
     githubText: string;
     linkedinUrl: string;
@@ -82,6 +84,8 @@ export const defaultContent: PortfolioContent = {
     email: "hello@example.com",
     phone: "+1 (234) 567-890",
     whatsapp: "+1 (234) 567-890",
+    telegramUrl: "https://t.me/username",
+    telegramText: "t.me/username",
     githubUrl: "https://github.com",
     githubText: "github.com/username",
     linkedinUrl: "https://linkedin.com",
