@@ -48,8 +48,6 @@ export interface PortfolioContent {
     githubText: string;
     linkedinUrl: string;
     linkedinText: string;
-    telegram: string;
-    telegramText: string;
     location: string;
   };
   certificates: CertificateContent[];
@@ -88,8 +86,6 @@ export const defaultContent: PortfolioContent = {
     githubText: "github.com/username",
     linkedinUrl: "https://linkedin.com",
     linkedinText: "linkedin.com/in/username",
-    telegram: "@username",
-    telegramText: "@username",
     location: "San Francisco, CA"
   },
   certificates: [

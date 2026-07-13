@@ -3,7 +3,7 @@ import { apiFetch } from '../../lib/api';
 import { useContent, PortfolioContent, CertificateContent, SkillGroup, SkillItem } from '../../contexts/ContentContext';
 import { Button } from '../ui/Button';
 import { Save, Plus, Trash2, Link, Upload, Loader2 } from 'lucide-react';
-import { uploadImageToStorage } from '../../lib/uploadImage';
+import imageCompression from 'browser-image-compression';
 
 export default function SettingsForm() {
   const { content } = useContent();
@@ -119,11 +119,14 @@ export default function SettingsForm() {
     
     setUploadingProfile(true);
     try {
-      const downloadURL = await uploadImageToStorage(file, 'profile');
-      handleChange('hero', 'profileImage', downloadURL);
+      const options = { maxSizeMB: 0.1, maxWidthOrHeight: 800, useWebWorker: true };
+      const compressedFile = await imageCompression(file, options);
+      const base64Url = await imageCompression.getDataUrlFromFile(compressedFile);
+      
+      handleChange('hero', 'profileImage', base64Url);
     } catch (err) {
       console.error(err);
-      alert('Failed to upload image.');
+      alert('Failed to process image.');
     } finally {
       setUploadingProfile(false);
     }
@@ -136,11 +139,14 @@ export default function SettingsForm() {
     
     setUploadingAbout(true);
     try {
-      const downloadURL = await uploadImageToStorage(file, 'about');
-      handleChange('about', 'aboutImage', downloadURL);
+      const options = { maxSizeMB: 0.1, maxWidthOrHeight: 800, useWebWorker: true };
+      const compressedFile = await imageCompression(file, options);
+      const base64Url = await imageCompression.getDataUrlFromFile(compressedFile);
+      
+      handleChange('about', 'aboutImage', base64Url);
     } catch (err) {
       console.error(err);
-      alert('Failed to upload image.');
+      alert('Failed to process image.');
     } finally {
       setUploadingAbout(false);
     }
@@ -153,11 +159,14 @@ export default function SettingsForm() {
     
     setUploadingCert(index);
     try {
-      const downloadURL = await uploadImageToStorage(file, 'certificates');
-      handleCertificateChange(index, 'image', downloadURL);
+      const options = { maxSizeMB: 0.1, maxWidthOrHeight: 800, useWebWorker: true };
+      const compressedFile = await imageCompression(file, options);
+      const base64Url = await imageCompression.getDataUrlFromFile(compressedFile);
+      
+      handleCertificateChange(index, 'image', base64Url);
     } catch (err) {
       console.error(err);
-      alert('Failed to upload certificate image.');
+      alert('Failed to process certificate image.');
     } finally {
       setUploadingCert(null);
     }
@@ -428,26 +437,6 @@ export default function SettingsForm() {
                 type="text" 
                 value={formData.contact.linkedinText} 
                 onChange={(e) => handleChange('contact', 'linkedinText', e.target.value)}
-                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm text-gray-400">Telegram Username</label>
-              <input 
-                type="text" 
-                value={formData.contact.telegram || ''} 
-                onChange={(e) => handleChange('contact', 'telegram', e.target.value)}
-                placeholder="@username"
-                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm text-gray-400">Telegram Display Text</label>
-              <input 
-                type="text" 
-                value={formData.contact.telegramText || ''} 
-                onChange={(e) => handleChange('contact', 'telegramText', e.target.value)}
-                placeholder="@username"
                 className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
               />
             </div>

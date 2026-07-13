@@ -41,7 +41,7 @@ if (getApps().length === 0) {
 const db = getFirestore();
 
 const app = express();
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json());
 app.use(cookieParser());
 app.use(cors({ origin: true, credentials: true }));
 

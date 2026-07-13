@@ -4,7 +4,7 @@ import { apiFetch } from '../../lib/api';
 import { Project } from '../../types';
 import { Button } from '../ui/Button';
 import { Plus, Trash2, Edit2, Save, X, Upload, Loader2 } from 'lucide-react';
-import { uploadImageToStorage } from '../../lib/uploadImage';
+import imageCompression from 'browser-image-compression';
 
 
 export default function ProjectsManager() {
@@ -67,11 +67,19 @@ export default function ProjectsManager() {
     
     setUploadingImage(true);
     try {
-      const downloadURL = await uploadImageToStorage(file, 'projects');
-      setFormData({ ...formData, thumbnail: downloadURL });
+      const options = {
+        maxSizeMB: 0.1,
+        maxWidthOrHeight: 800,
+        useWebWorker: true,
+      };
+      
+      const compressedFile = await imageCompression(file, options);
+      const base64Url = await imageCompression.getDataUrlFromFile(compressedFile);
+      
+      setFormData({ ...formData, thumbnail: base64Url });
     } catch (err) {
-      console.error('Image upload failed:', err);
-      alert('Failed to upload image. Please try again.');
+      console.error('Image processing failed:', err);
+      alert('Failed to process image.');
     } finally {
       setUploadingImage(false);
     }
