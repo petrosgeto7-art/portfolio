@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../../lib/api';
 import { useContent, PortfolioContent, CertificateContent, SkillGroup, SkillItem } from '../../contexts/ContentContext';
 import { Button } from '../ui/Button';
-import { Save, Plus, Trash2, Link } from 'lucide-react';
+import { Save, Plus, Trash2, Link, Upload, Loader2 } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 
 export default function SettingsForm() {
   const { content } = useContent();
@@ -18,7 +19,7 @@ export default function SettingsForm() {
     setFormData(prev => ({
       ...prev,
       [section]: {
-        ...prev[section],
+        ...(prev[section] as any),
         [field]: value
       }
     }));
@@ -63,10 +64,10 @@ export default function SettingsForm() {
     }));
   };
 
-  const handleSkillGroupChange = (index: number, value: string) => {
+  const handleSkillGroupChange = (index: number, field: keyof SkillGroup, value: string) => {
     setFormData(prev => {
       const newSkills = [...prev.skills];
-      newSkills[index] = { ...newSkills[index], category: value };
+      newSkills[index] = { ...newSkills[index], [field]: value };
       return { ...prev, skills: newSkills };
     });
   };
@@ -97,30 +98,78 @@ export default function SettingsForm() {
     });
   };
 
-  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    
-    try {
-      const url = "";
-      handleChange('hero', 'profileImage', url);
-    } catch (err) {
-      console.error(err);
-      alert('Failed to upload image');
-    }
-    
+  const addSkillGroup = () => {
+    setFormData(prev => ({
+      ...prev,
+      skills: [...prev.skills, { category: 'New Domain', icon: '✨', items: [] }]
+    }));
   };
 
-  const handleCertImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+  const removeSkillGroup = (groupIndex: number) => {
+    setFormData(prev => ({
+      ...prev,
+      skills: prev.skills.filter((_, i) => i !== groupIndex)
+    }));
+  };
+
+  const [uploadingProfile, setUploadingProfile] = useState(false);
+  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
     
+    setUploadingProfile(true);
     try {
-      const url = "";
-      handleCertificateChange(index, 'image', url);
+      const options = { maxSizeMB: 0.1, maxWidthOrHeight: 800, useWebWorker: true };
+      const compressedFile = await imageCompression(file, options);
+      const base64Url = await imageCompression.getDataUrlFromFile(compressedFile);
+      
+      handleChange('hero', 'profileImage', base64Url);
     } catch (err) {
       console.error(err);
-      alert('Failed to upload certificate image');
+      alert('Failed to process image.');
+    } finally {
+      setUploadingProfile(false);
     }
+  };
+
+  const [uploadingAbout, setUploadingAbout] = useState(false);
+  const handleAboutImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
     
+    setUploadingAbout(true);
+    try {
+      const options = { maxSizeMB: 0.1, maxWidthOrHeight: 800, useWebWorker: true };
+      const compressedFile = await imageCompression(file, options);
+      const base64Url = await imageCompression.getDataUrlFromFile(compressedFile);
+      
+      handleChange('about', 'aboutImage', base64Url);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to process image.');
+    } finally {
+      setUploadingAbout(false);
+    }
+  };
+
+  const [uploadingCert, setUploadingCert] = useState<number | null>(null);
+  const handleCertImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    
+    setUploadingCert(index);
+    try {
+      const options = { maxSizeMB: 0.1, maxWidthOrHeight: 800, useWebWorker: true };
+      const compressedFile = await imageCompression(file, options);
+      const base64Url = await imageCompression.getDataUrlFromFile(compressedFile);
+      
+      handleCertificateChange(index, 'image', base64Url);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to process certificate image.');
+    } finally {
+      setUploadingCert(null);
+    }
   };
 
   
@@ -221,14 +270,21 @@ export default function SettingsForm() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm text-gray-400">Profile Image URL</label>
-              <input 
-                type="text" 
-                value={formData.hero.profileImage} 
-                onChange={(e) => handleChange('hero', 'profileImage', e.target.value)}
-                placeholder="https://example.com/profile.jpg or /image.png"
-                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
-              />
+              <label className="text-sm text-gray-400">Profile Image URL or Upload</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={formData.hero.profileImage} 
+                  onChange={(e) => handleChange('hero', 'profileImage', e.target.value)}
+                  placeholder="https://example.com/profile.jpg"
+                  className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
+                />
+                <label className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:bg-white/10 transition-colors">
+                  {uploadingProfile ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                  <span className="text-sm">Upload</span>
+                  <input type="file" className="hidden" accept="image/*" onChange={handleProfileImageUpload} disabled={uploadingProfile} />
+                </label>
+              </div>
               {formData.hero.profileImage && (
                 <div className="mt-3 flex items-center gap-4">
                   <div className="w-16 h-16 rounded-xl overflow-hidden border border-white/10">
@@ -283,14 +339,21 @@ export default function SettingsForm() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm text-gray-400">About Section Image URL</label>
-              <input 
-                type="text" 
-                value={formData.about.aboutImage || ''} 
-                onChange={(e) => handleChange('about', 'aboutImage', e.target.value)}
-                placeholder="https://example.com/about-image.jpg"
-                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
-              />
+              <label className="text-sm text-gray-400">About Section Image URL or Upload</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={formData.about.aboutImage || ''} 
+                  onChange={(e) => handleChange('about', 'aboutImage', e.target.value)}
+                  placeholder="https://example.com/about-image.jpg"
+                  className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
+                />
+                <label className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:bg-white/10 transition-colors">
+                  {uploadingAbout ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                  <span className="text-sm">Upload</span>
+                  <input type="file" className="hidden" accept="image/*" onChange={handleAboutImageUpload} disabled={uploadingAbout} />
+                </label>
+              </div>
               {formData.about.aboutImage && (
                 <div className="mt-3 rounded-xl overflow-hidden border border-white/10 max-w-xs">
                   <img src={formData.about.aboutImage} alt="About preview" className="w-full h-auto object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -377,6 +440,26 @@ export default function SettingsForm() {
                 className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
               />
             </div>
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400">Telegram Username</label>
+              <input 
+                type="text" 
+                value={formData.contact.telegram || ''} 
+                onChange={(e) => handleChange('contact', 'telegram', e.target.value)}
+                placeholder="@username"
+                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400">Telegram Display Text</label>
+              <input 
+                type="text" 
+                value={formData.contact.telegramText || ''} 
+                onChange={(e) => handleChange('contact', 'telegramText', e.target.value)}
+                placeholder="@username"
+                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
+              />
+            </div>
           </div>
         </div>
 
@@ -428,14 +511,21 @@ export default function SettingsForm() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm text-gray-400 block mb-1">Image URL</label>
-                    <input 
-                      type="text" 
-                      value={cert.image} 
-                      onChange={(e) => handleCertificateChange(index, 'image', e.target.value)}
-                      placeholder="https://example.com/cert-image.jpg"
-                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
-                    />
+                    <label className="text-sm text-gray-400 block mb-1">Image URL or Upload</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        value={cert.image} 
+                        onChange={(e) => handleCertificateChange(index, 'image', e.target.value)}
+                        placeholder="https://example.com/cert-image.jpg"
+                        className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
+                      />
+                      <label className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:bg-white/10 transition-colors">
+                        {uploadingCert === index ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                        <span className="text-sm">Upload</span>
+                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleCertImageUpload(e, index)} disabled={uploadingCert === index} />
+                      </label>
+                    </div>
                     {cert.image && (
                       <div className="mt-2 w-20 h-14 rounded-lg overflow-hidden border border-white/10">
                         <img src={cert.image} alt="Cert preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -453,19 +543,65 @@ export default function SettingsForm() {
 
         {/* Skills Section */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-6">
-          <h3 className="text-xl font-bold text-white">Skills Section</h3>
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold text-white">Skills Section</h3>
+            <Button onClick={addSkillGroup} size="sm" variant="outline" className="gap-2">
+              <Plus size={16} /> Add Domain
+            </Button>
+          </div>
           
-          <div className="space-y-8">
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400">Section Heading</label>
+              <input 
+                type="text" 
+                value={formData.skillsSection?.heading || ''} 
+                onChange={(e) => handleChange('skillsSection', 'heading', e.target.value)}
+                placeholder="Technical Arsenal."
+                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400">Section Description</label>
+              <textarea 
+                rows={3}
+                value={formData.skillsSection?.description || ''} 
+                onChange={(e) => handleChange('skillsSection', 'description', e.target.value)}
+                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors resize-none"
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-8 mt-8">
             {formData.skills.map((group, groupIndex) => (
-              <div key={groupIndex} className="p-6 border border-white/10 rounded-xl bg-black/30">
-                <div className="mb-4">
-                  <label className="text-sm text-gray-400">Category Name</label>
-                  <input 
-                    type="text" 
-                    value={group.category} 
-                    onChange={(e) => handleSkillGroupChange(groupIndex, e.target.value)}
-                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors mt-2"
-                  />
+              <div key={groupIndex} className="p-6 border border-white/10 rounded-xl bg-black/30 relative">
+                <button 
+                  onClick={() => removeSkillGroup(groupIndex)}
+                  className="absolute top-4 right-4 text-gray-500 hover:text-red-400 transition-colors"
+                  title="Remove Domain"
+                >
+                  <Trash2 size={20} />
+                </button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pr-8">
+                  <div>
+                    <label className="text-sm text-gray-400">Category Name (Domain)</label>
+                    <input 
+                      type="text" 
+                      value={group.category} 
+                      onChange={(e) => handleSkillGroupChange(groupIndex, 'category', e.target.value)}
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors mt-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-400">Category Icon (Emoji or URL)</label>
+                    <input 
+                      type="text" 
+                      value={group.icon || ''} 
+                      onChange={(e) => handleSkillGroupChange(groupIndex, 'icon', e.target.value)}
+                      placeholder="e.g. 🎨 or ⚙️"
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors mt-2"
+                    />
+                  </div>
                 </div>
                 
                 <div className="space-y-3">
@@ -477,20 +613,27 @@ export default function SettingsForm() {
                   </div>
                   
                   {group.items.map((item, itemIndex) => (
-                    <div key={itemIndex} className="flex gap-2 items-center">
+                    <div key={itemIndex} className="flex gap-2 items-center flex-wrap md:flex-nowrap">
                       <input 
                         type="text" 
                         value={item.name} 
                         onChange={(e) => handleSkillItemChange(groupIndex, itemIndex, 'name', e.target.value)}
                         placeholder="Skill Name"
-                        className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-primary transition-colors"
+                        className="flex-1 min-w-[120px] bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-primary transition-colors"
+                      />
+                      <input 
+                        type="text" 
+                        value={item.iconUrl || ''} 
+                        onChange={(e) => handleSkillItemChange(groupIndex, itemIndex, 'iconUrl', e.target.value)}
+                        placeholder="Custom Icon URL (optional)"
+                        className="flex-1 min-w-[140px] bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-primary transition-colors"
                       />
                       <input 
                         type="text" 
                         value={item.color} 
                         onChange={(e) => handleSkillItemChange(groupIndex, itemIndex, 'color', e.target.value)}
                         placeholder="Tailwind Color (e.g. bg-blue-500)"
-                        className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-primary transition-colors"
+                        className="flex-1 min-w-[120px] bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-primary transition-colors"
                       />
                       <button 
                         onClick={() => removeSkillItem(groupIndex, itemIndex)}

@@ -3,7 +3,8 @@ import { apiFetch } from '../../lib/api';
 
 import { Project } from '../../types';
 import { Button } from '../ui/Button';
-import { Plus, Trash2, Edit2, Save, X, Upload } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, Upload, Loader2 } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 
 
 export default function ProjectsManager() {
@@ -62,14 +63,26 @@ export default function ProjectsManager() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
-    try {
-      const url = "";
-      setFormData({ ...formData, thumbnail: url });
-    } catch (err) {
-      console.error('Image upload failed:', err);
-      alert('Failed to upload image. Please try again.');
-    }
+    const file = e.target.files[0];
     
+    setUploadingImage(true);
+    try {
+      const options = {
+        maxSizeMB: 0.5,
+        maxWidthOrHeight: 800,
+        useWebWorker: true,
+      };
+      
+      const compressedFile = await imageCompression(file, options);
+      const base64Url = await imageCompression.getDataUrlFromFile(compressedFile);
+      
+      setFormData({ ...formData, thumbnail: base64Url });
+    } catch (err) {
+      console.error('Image processing failed:', err);
+      alert('Failed to process image.');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   if (loading) return <div className="text-gray-400">Loading projects...</div>;
@@ -105,16 +118,23 @@ export default function ProjectsManager() {
                   placeholder="Description"
                 />
                 <div className="space-y-2">
-                  <label className="text-xs text-gray-400">Thumbnail Image URL</label>
-                  <input 
-                    type="text" 
-                    value={formData.thumbnail || ''} 
-                    onChange={e => setFormData({...formData, thumbnail: e.target.value})}
-                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-white" 
-                    placeholder="https://example.com/project-image.jpg"
-                  />
+                  <label className="text-xs text-gray-400">Thumbnail Image URL or Upload</label>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={formData.thumbnail || ''} 
+                      onChange={e => setFormData({...formData, thumbnail: e.target.value})}
+                      className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-white" 
+                      placeholder="https://example.com/project-image.jpg"
+                    />
+                    <label className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:bg-white/10 transition-colors">
+                      {uploadingImage ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                      <span className="text-sm">Upload</span>
+                      <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage} />
+                    </label>
+                  </div>
                   {formData.thumbnail && (
-                    <div className="mt-2 w-24 h-16 rounded-lg overflow-hidden border border-white/10">
+                    <div className="mt-2 w-24 h-16 rounded-lg overflow-hidden border border-white/10 relative">
                       <img src={formData.thumbnail} alt="Thumbnail preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     </div>
                   )}

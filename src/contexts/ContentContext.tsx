@@ -11,10 +11,12 @@ export interface CertificateContent {
 export interface SkillItem {
   name: string;
   color: string;
+  iconUrl?: string;
 }
 
 export interface SkillGroup {
   category: string;
+  icon?: string;
   items: SkillItem[];
 }
 
@@ -46,9 +48,15 @@ export interface PortfolioContent {
     githubText: string;
     linkedinUrl: string;
     linkedinText: string;
+    telegram: string;
+    telegramText: string;
     location: string;
   };
   certificates: CertificateContent[];
+  skillsSection: {
+    heading: string;
+    description: string;
+  };
   skills: SkillGroup[];
 }
 
@@ -80,6 +88,8 @@ export const defaultContent: PortfolioContent = {
     githubText: "github.com/username",
     linkedinUrl: "https://linkedin.com",
     linkedinText: "linkedin.com/in/username",
+    telegram: "@username",
+    telegramText: "@username",
     location: "San Francisco, CA"
   },
   certificates: [
@@ -87,10 +97,14 @@ export const defaultContent: PortfolioContent = {
     { title: 'Meta Front-End Developer Professional', issuer: 'Coursera', date: '2024', image: 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?q=80&w=600&auto=format&fit=crop' },
     { title: 'Advanced React Patterns', issuer: 'Frontend Masters', date: '2024', image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=600&auto=format&fit=crop' }
   ],
+  skillsSection: {
+    heading: "Technical Arsenal.",
+    description: "I engineer intelligent, high-performance web systems by leveraging cutting-edge AI models and modern frameworks. My focus is on designing scalable architectures, writing robust code, and delivering seamless, impactful user experiences."
+  },
   skills: [
-    { category: 'AI & Data', items: [{name: 'Gemini AI', color: 'bg-indigo-500'}, {name: 'TensorFlow', color: 'bg-orange-500'}, {name: 'Python', color: 'bg-blue-400'}, {name: 'LangChain', color: 'bg-green-500'}, {name: 'Pandas', color: 'bg-purple-500'}] },
-    { category: 'Frontend & UI', items: [{name: 'React 19', color: 'bg-yellow-400'}, {name: 'Next.js', color: 'bg-white'}, {name: 'TypeScript', color: 'bg-blue-500'}, {name: 'Tailwind CSS', color: 'bg-cyan-500'}, {name: 'Framer Motion', color: 'bg-pink-500'}] },
-    { category: 'Backend & Cloud', items: [{name: 'Node.js', color: 'bg-green-500'}, {name: 'Django', color: 'bg-emerald-600'}, {name: 'PostgreSQL', color: 'bg-blue-400'}, {name: 'Docker', color: 'bg-blue-600'}, {name: 'Supabase', color: 'bg-emerald-500'}] }
+    { category: 'AI & Data', icon: '🤖', items: [{name: 'Gemini AI', color: 'bg-indigo-500'}, {name: 'TensorFlow', color: 'bg-orange-500'}, {name: 'Python', color: 'bg-blue-400'}, {name: 'LangChain', color: 'bg-green-500'}, {name: 'Pandas', color: 'bg-purple-500'}] },
+    { category: 'Frontend & UI', icon: '🎨', items: [{name: 'React 19', color: 'bg-yellow-400'}, {name: 'Next.js', color: 'bg-white'}, {name: 'TypeScript', color: 'bg-blue-500'}, {name: 'Tailwind CSS', color: 'bg-cyan-500'}, {name: 'Framer Motion', color: 'bg-pink-500'}] },
+    { category: 'Backend & Cloud', icon: '⚙️', items: [{name: 'Node.js', color: 'bg-green-500'}, {name: 'Django', color: 'bg-emerald-600'}, {name: 'PostgreSQL', color: 'bg-blue-400'}, {name: 'Docker', color: 'bg-blue-600'}, {name: 'Supabase', color: 'bg-emerald-500'}] }
   ]
 };
 
@@ -111,6 +125,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const data = await apiFetch('/settings');
         if (data && Object.keys(data).length > 0) {
           if (!data.certificates) data.certificates = defaultContent.certificates;
+          if (!data.skillsSection) data.skillsSection = defaultContent.skillsSection;
           if (!data.skills) data.skills = defaultContent.skills;
           setContent(data as PortfolioContent);
         } else {

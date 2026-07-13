@@ -1,60 +1,53 @@
 // @ts-nocheck
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import path from 'path';
-// NOTE: vite is imported dynamically below — only in dev mode
-// A static import here crashes the Vercel serverless function
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
 dotenv.config();
 
-mongoose.set('bufferCommands', false);
+// --- Firebase Admin Initialization ---
+if (getApps().length === 0) {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
+    try {
+      const serviceAccount = JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf8'));
+      initializeApp({
+        credential: cert(serviceAccount),
+      });
+      console.log('Firebase initialized using base64 service account.');
+    } catch (e) {
+      console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_BASE64', e);
+    }
+  } else {
+    // Fallback to legacy environment variables or default
+    const projectId = process.env.FIREBASE_PROJECT_ID || 'portfolio-6c8bc';
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+    if (clientEmail && privateKey) {
+      initializeApp({
+        credential: cert({ projectId, clientEmail, privateKey }),
+      });
+    } else {
+      initializeApp({ projectId });
+    }
+  }
+}
+
+const db = getFirestore();
+
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
-app.use(cors({ origin: true, credentials: true })); // Vercel might need specific origin setup if not on same domain
+app.use(cors({ origin: true, credentials: true }));
 
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey';
-
-// --- Mongoose Models ---
-const ProjectSchema = new mongoose.Schema({
-  title: String,
-  slug: String,
-  description: String,
-  content: String,
-  thumbnail: String,
-  technologies: [String],
-  githubUrl: String,
-  liveUrl: String,
-  featured: Boolean,
-  order: Number,
-  createdAt: { type: Number, default: () => Date.now() }
-});
-const Project = mongoose.models.Project || mongoose.model('Project', ProjectSchema);
-
-const MessageSchema = new mongoose.Schema({
-  name: String,
-  email: String,
-  message: String,
-  read: { type: Boolean, default: false },
-  createdAt: { type: Number, default: () => Date.now() }
-});
-const Message = mongoose.models.Message || mongoose.model('Message', MessageSchema);
-
-const SettingsSchema = new mongoose.Schema({
-  _id: { type: String, default: 'content' },
-  hero: Object,
-  about: Object,
-  contact: Object,
-  certificates: Array,
-  skills: Array
-});
-const Settings = mongoose.models.Settings || mongoose.model('Settings', SettingsSchema);
 
 // --- Auth Middleware ---
 const requireAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -98,111 +91,128 @@ api.get('/auth/check', (req, res) => {
   }
 });
 
-// Projects
+// --- Projects ---
 api.get('/projects', async (req, res) => {
-  if (mongoose.connection.readyState !== 1) return res.json([]);
-  const projects = await Project.find().sort({ order: 1 });
-  // Map _id to id
-  res.json(projects.map(p => {
-    const obj = p.toObject();
-    obj.id = obj._id;
-    delete obj._id;
-    return obj;
-  }));
+  try {
+    const snapshot = await db.collection('projects').orderBy('order', 'asc').get();
+    const projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.json(projects);
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+    res.json([]);
+  }
 });
+
 api.post('/projects', requireAuth, async (req, res) => {
-  if (mongoose.connection.readyState !== 1) return res.status(500).json({ error: 'Not connected to DB' });
-  const p = new Project(req.body);
-  await p.save();
-  res.json(p);
+  try {
+    const data = { ...req.body, createdAt: Date.now() };
+    const docRef = await db.collection('projects').add(data);
+    res.json({ id: docRef.id, ...data });
+  } catch (error) {
+    console.error('Error creating project:', error);
+    res.status(500).json({ error: 'Failed to create project' });
+  }
 });
+
 api.put('/projects/:id', requireAuth, async (req, res) => {
-  if (mongoose.connection.readyState !== 1) return res.status(500).json({ error: 'Not connected to DB' });
-  const p = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  res.json(p);
+  try {
+    await db.collection('projects').doc(req.params.id).update(req.body);
+    const doc = await db.collection('projects').doc(req.params.id).get();
+    res.json({ id: doc.id, ...doc.data() });
+  } catch (error) {
+    console.error('Error updating project:', error);
+    res.status(500).json({ error: 'Failed to update project' });
+  }
 });
+
 api.delete('/projects/:id', requireAuth, async (req, res) => {
-  if (mongoose.connection.readyState !== 1) return res.status(500).json({ error: 'Not connected to DB' });
-  await Project.findByIdAndDelete(req.params.id);
-  res.json({ success: true });
+  try {
+    await db.collection('projects').doc(req.params.id).delete();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting project:', error);
+    res.status(500).json({ error: 'Failed to delete project' });
+  }
 });
 
-// Messages
+// --- Messages ---
 api.get('/messages', requireAuth, async (req, res) => {
-  if (mongoose.connection.readyState !== 1) return res.json([]);
-  const msgs = await Message.find().sort({ createdAt: -1 });
-  res.json(msgs.map(m => {
-    const obj = m.toObject();
-    obj.id = obj._id;
-    delete obj._id;
-    return obj;
-  }));
+  try {
+    const snapshot = await db.collection('messages').orderBy('createdAt', 'desc').get();
+    const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.json(messages);
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    res.json([]);
+  }
 });
+
 api.post('/messages', async (req, res) => {
-  if (mongoose.connection.readyState !== 1) return res.status(500).json({ error: 'Not connected to DB' });
-  const m = new Message(req.body);
-  await m.save();
-  res.json(m);
+  try {
+    const data = { ...req.body, read: false, createdAt: Date.now() };
+    const docRef = await db.collection('messages').add(data);
+    res.json({ id: docRef.id, ...data });
+  } catch (error) {
+    console.error('Error creating message:', error);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
 });
+
 api.delete('/messages/:id', requireAuth, async (req, res) => {
-  if (mongoose.connection.readyState !== 1) return res.status(500).json({ error: 'Not connected to DB' });
-  await Message.findByIdAndDelete(req.params.id);
-  res.json({ success: true });
+  try {
+    await db.collection('messages').doc(req.params.id).delete();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting message:', error);
+    res.status(500).json({ error: 'Failed to delete message' });
+  }
 });
 
-// Settings
+// --- Settings ---
 api.get('/settings', async (req, res) => {
-  if (mongoose.connection.readyState !== 1) return res.json({});
-  let s = await Settings.findById('content');
-  res.json(s || {});
+  try {
+    const doc = await db.collection('settings').doc('content').get();
+    res.json(doc.exists ? doc.data() : {});
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.json({});
+  }
 });
+
 api.post('/settings', requireAuth, async (req, res) => {
-  if (mongoose.connection.readyState !== 1) return res.status(500).json({ error: 'Not connected to DB' });
-  const s = await Settings.findByIdAndUpdate('content', req.body, { new: true, upsert: true });
-  res.json(s);
+  try {
+    await db.collection('settings').doc('content').set(req.body, { merge: true });
+    const doc = await db.collection('settings').doc('content').get();
+    res.json(doc.data());
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    res.status(500).json({ error: 'Failed to update settings' });
+  }
 });
 
+// --- Stats ---
 api.get('/stats', requireAuth, async (req, res) => {
-  if (mongoose.connection.readyState !== 1) return res.json({ projects: 0, messages: 0 });
-  const projectsCount = await Project.countDocuments();
-  const messagesCount = await Message.countDocuments();
-  res.json({ projects: projectsCount, messages: messagesCount });
+  try {
+    const [projectsSnap, messagesSnap] = await Promise.all([
+      db.collection('projects').count().get(),
+      db.collection('messages').count().get(),
+    ]);
+    res.json({
+      projects: projectsSnap.data().count,
+      messages: messagesSnap.data().count,
+    });
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.json({ projects: 0, messages: 0 });
+  }
 });
 
-// --- DB Connection (Serverless Support) ---
-let isConnected = false;
-const connectDB = async () => {
-  if (isConnected) return;
-  if (mongoose.connection.readyState === 1) {
-    isConnected = true;
-    return;
-  }
-  if (process.env.MONGODB_URI) {
-    try {
-      await mongoose.connect(process.env.MONGODB_URI);
-      isConnected = true;
-      console.log('Connected to MongoDB');
-    } catch (error) {
-      console.error('MongoDB connection error:', error);
-    }
-  } else {
-    console.warn('MONGODB_URI is not set. API will fail if it requires DB access.');
-  }
-};
+app.use('/api', api);
 
-app.use('/api', async (req, res, next) => {
-  await connectDB();
-  next();
-}, api);
-
-// Serve Vercel/Vite handling
+// Serve Vite / static files
 async function startServer() {
-  await connectDB();
-
-
   if (process.env.NODE_ENV !== 'production') {
     // Dynamic import: vite is only loaded in dev, never on Vercel
-    // Using a variable bypasses Vercel's @vercel/nft static analysis which crashes trying to bundle Vite
     const viteModule = 'vite';
     const { createServer: createViteServer } = await import(viteModule);
     const vite = await createViteServer({
