@@ -8,7 +8,14 @@ import path from 'path';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
-dotenv.config();
+import fs from 'fs';
+
+// Try to load .env.local first, fallback to .env
+if (fs.existsSync('.env.local')) {
+  dotenv.config({ path: '.env.local' });
+} else {
+  dotenv.config();
+}
 
 // --- Firebase Admin Initialization ---
 if (getApps().length === 0) {
