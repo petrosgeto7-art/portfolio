@@ -15,8 +15,9 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Portfolio />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/peto" element={<AdminLogin />} />
+          <Route path="/peto" element={<Admin />} />
+          <Route path="/peto-login" element={<AdminLogin />} />
+          <Route path="*" element={<div className="min-h-screen bg-background flex items-center justify-center text-white text-3xl font-bold font-display tracking-tight">404 - Page Not Found</div>} />
         </Routes>
       </BrowserRouter>
     </ContentProvider>

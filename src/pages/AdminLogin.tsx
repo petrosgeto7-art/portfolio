@@ -21,7 +21,7 @@ export default function AdminLogin() {
         method: 'POST',
         body: JSON.stringify({ password })
       });
-      navigate('/admin');
+      navigate('/peto');
     } catch (err: any) {
       setError(err.message || 'Failed to login');
     } finally {

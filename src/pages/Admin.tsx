@@ -26,10 +26,10 @@ export default function Admin() {
         if (authenticated) {
           fetchStats();
         } else {
-          navigate('/peto');
+          navigate('/peto-login');
         }
       } catch (err) {
-        navigate('/peto');
+        navigate('/peto-login');
       } finally {
         setLoading(false);
       }
