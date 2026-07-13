@@ -3,13 +3,13 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 const firebaseConfig = {
-  apiKey: "AIzaSyAI5hky2hNAgzxaHheCxcMTxDCp9nAoL4E",
-  authDomain: "pportfolio-a820b.firebaseapp.com",
-  projectId: "pportfolio-a820b",
-  storageBucket: "pportfolio-a820b.firebasestorage.app",
-  messagingSenderId: "823970815096",
-  appId: "1:823970815096:web:2358b68b159c624cc0e18d",
-  measurementId: "G-FQ7N8X1QGF"
+  apiKey: "AIzaSyBfakdbU5uHjc13H0tVCD73E_bilkJWF9s",
+  authDomain: "pportfolioo-a8286.firebaseapp.com",
+  projectId: "pportfolioo-a8286",
+  storageBucket: "pportfolioo-a8286.firebasestorage.app",
+  messagingSenderId: "1042362084213",
+  appId: "1:1042362084213:web:63199a4c7a136b8852413c",
+  measurementId: "G-81CZ8QNL95"
 };
 
 const app = initializeApp(firebaseConfig);
